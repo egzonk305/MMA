@@ -3,553 +3,1070 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manga-/Anime-Bibliothek</title>
+  <title>オタク Kiroku — Anime & Manga Bibliothek</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;700;800&family=Archivo:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+JP:wght@400;700;900&display=swap" rel="stylesheet">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      darkMode: "class"
-    };
+    tailwind.config = { darkMode: "class", theme: { extend: {} } };
   </script>
+
+  <!-- Safelist dynamische Klassen für Tailwind CDN -->
+  <div class="hidden border-red-400 border-green-400 ring-2 ring-red-300 ring-green-300
+              bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+              bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+              bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"></div>
+
+  <style>
+    :root {
+      --paper:   #f1ebdd;
+      --paper-2: #e8e0cb;
+      --ink:     #0d0d0f;
+      --ink-2:   #2a2320;
+      --blood:   #c8102e;
+      --cobalt:  #1a2e6b;
+      --mustard: #d4a422;
+      --stone:   #8a8275;
+    }
+    html.dark {
+      --paper:   #0a0a12;
+      --paper-2: #11111d;
+      --ink:     #f4efe6;
+      --ink-2:   #cfc8b6;
+      --blood:   #ff2a6d;
+      --cobalt:  #05d9e8;
+      --mustard: #fff45e;
+      --stone:   #4a4558;
+    }
+
+    html, body { background: var(--paper); color: var(--ink); }
+    body {
+      font-family: 'Archivo', sans-serif;
+      font-feature-settings: "ss01","ss02","cv11";
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .serif   { font-family: 'Shippori Mincho B1', 'Noto Serif JP', serif; }
+    .jp      { font-family: 'Noto Serif JP', 'Shippori Mincho B1', serif; }
+    .mono    { font-family: 'JetBrains Mono', monospace; }
+
+    /* ---------- GRAIN & NOISE ---------- */
+    body::before {
+      content:"";
+      position: fixed; inset: 0; pointer-events: none; z-index: 1;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      opacity: 0.18; mix-blend-mode: multiply;
+    }
+    html.dark body::before { opacity: 0.28; mix-blend-mode: screen; }
+
+    /* ---------- HALFTONE ---------- */
+    .halftone {
+      background-image: radial-gradient(var(--ink) 1px, transparent 1.2px);
+      background-size: 6px 6px;
+    }
+    .halftone-sm {
+      background-image: radial-gradient(var(--ink) 0.8px, transparent 1px);
+      background-size: 4px 4px;
+    }
+
+    /* ---------- KANJI WATERMARK ---------- */
+    .kanji-wm {
+      font-family: 'Noto Serif JP', serif;
+      font-weight: 900;
+      color: var(--ink);
+      opacity: 0.04;
+      letter-spacing: -0.05em;
+      line-height: 0.8;
+      pointer-events: none;
+    }
+    html.dark .kanji-wm { opacity: 0.06; }
+
+    /* ---------- GLOBAL OVERRIDES ---------- */
+    *::selection { background: var(--blood); color: var(--paper); }
+    * { scrollbar-width: thin; scrollbar-color: var(--blood) transparent; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--blood); }
+
+    /* ---------- BUTTON STAMP ---------- */
+    .stamp {
+      position: relative;
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s;
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+    .stamp:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .stamp:active { transform: translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
+
+    .stamp-blood { background: var(--blood); color: var(--paper); border-color: var(--ink); }
+    .stamp-ink   { background: var(--ink);   color: var(--paper); }
+
+    /* ---------- TICKER ---------- */
+    .ticker {
+      display: flex; gap: 3rem;
+      white-space: nowrap;
+      animation: ticker 40s linear infinite;
+    }
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ---------- HERO GLYPH ---------- */
+    @keyframes float-slow {
+      0%,100% { transform: translateY(0) rotate(-6deg); }
+      50%     { transform: translateY(-14px) rotate(-4deg); }
+    }
+    .float-slow { animation: float-slow 7s ease-in-out infinite; }
+
+    /* ---------- PAGE REVEAL ---------- */
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .rise { animation: riseIn .7s cubic-bezier(.2,.8,.2,1) both; }
+    .rise-1 { animation-delay: .05s; }
+    .rise-2 { animation-delay: .15s; }
+    .rise-3 { animation-delay: .28s; }
+    .rise-4 { animation-delay: .42s; }
+
+    /* ---------- CARDS ---------- */
+    .zine-card {
+      position: relative;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      box-shadow: 6px 6px 0 var(--ink);
+      transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s;
+    }
+    .zine-card:hover {
+      transform: translate(-3px,-3px);
+      box-shadow: 10px 10px 0 var(--blood);
+    }
+    .zine-card .num {
+      position: absolute; top: -14px; left: -14px;
+      width: 44px; height: 44px;
+      background: var(--ink); color: var(--paper);
+      display: grid; place-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700; font-size: .75rem;
+      border: 2px solid var(--ink);
+      transform: rotate(-8deg);
+      z-index: 2;
+    }
+    .zine-card .rating-disk {
+      position: absolute; top: 12px; right: 12px;
+      width: 58px; height: 58px; border-radius: 999px;
+      background: var(--blood); color: var(--paper);
+      display: grid; place-items: center;
+      border: 2px solid var(--ink);
+      transform: rotate(10deg);
+      box-shadow: 2px 2px 0 var(--ink);
+      z-index: 2;
+    }
+    .zine-card .rating-disk .val {
+      font-family: 'Shippori Mincho B1', serif;
+      font-weight: 800; font-size: 1.25rem; line-height: 1;
+    }
+    .zine-card .rating-disk .sm {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .55rem; letter-spacing: .08em;
+    }
+
+    /* ---------- RATING BAR ---------- */
+    .bar-track {
+      height: 6px; background: var(--paper-2);
+      border: 1.5px solid var(--ink);
+      overflow: hidden; position: relative;
+    }
+    .bar-fill {
+      height: 100%;
+      background: repeating-linear-gradient(
+        -45deg,
+        var(--ink) 0 6px,
+        var(--blood) 6px 12px
+      );
+      transition: width .5s cubic-bezier(.2,.8,.2,1);
+    }
+
+    /* ---------- FORM ---------- */
+    .form-label {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--stone);
+      margin-bottom: 6px;
+    }
+    html.dark .form-label { color: var(--ink-2); }
+
+    .form-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--ink);
+      padding: 8px 2px;
+      font-family: 'Shippori Mincho B1', serif;
+      font-size: 1rem;
+      color: var(--ink);
+      outline: none;
+      border-radius: 0;
+      transition: border-color .15s, background .15s;
+    }
+    .form-input::placeholder { color: var(--stone); opacity: .6; font-style: italic; }
+    .form-input:focus {
+      border-bottom-color: var(--blood);
+      background: linear-gradient(to top, rgba(200,16,46,.06), transparent);
+    }
+    textarea.form-input { resize: none; }
+
+    .form-error {
+      margin-top: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--blood);
+    }
+
+    /* ---------- TAB SWITCHER ---------- */
+    .tab-btn {
+      position: relative;
+      padding: .85rem 1.25rem;
+      font-family: 'Shippori Mincho B1', serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: .02em;
+      color: var(--ink);
+      background: transparent;
+      border: 2px solid var(--ink);
+      transition: background .15s, color .15s;
+    }
+    .tab-btn .jp-sm {
+      font-family: 'Noto Serif JP', serif;
+      font-size: .65rem;
+      letter-spacing: .2em;
+      display: block;
+      margin-top: 2px;
+      opacity: .7;
+    }
+    .tab-btn.active {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .tab-btn:not(.active):hover {
+      background: var(--paper-2);
+    }
+
+    /* ---------- TOAST ---------- */
+    @keyframes toastIn {
+      from { transform: translateX(120%) rotate(2deg); opacity: 0; }
+      to   { transform: translateX(0) rotate(-1deg); opacity: 1; }
+    }
+    @keyframes toastOut {
+      to { transform: translateX(30%); opacity: 0; }
+    }
+    .toast-in  { animation: toastIn  .35s cubic-bezier(.2,.8,.2,1) forwards; }
+    .toast-out { animation: toastOut .25s ease forwards; }
+
+    /* ---------- DECORATIVE RULE ---------- */
+    .rule-heavy {
+      height: 6px;
+      background: var(--ink);
+      position: relative;
+    }
+    .rule-heavy::after {
+      content: ""; position: absolute;
+      top: -3px; left: 0; right: 0;
+      height: 1px; background: var(--ink);
+      transform: translateY(-4px);
+    }
+    .rule-double {
+      border-top: 2px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+      height: 4px;
+    }
+
+    /* ---------- BADGE ---------- */
+    .tag {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .25rem .6rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em;
+      border: 1.5px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .tag-ink    { background: var(--ink); color: var(--paper); }
+    .tag-blood  { background: var(--blood); color: var(--paper); border-color: var(--ink); }
+
+    /* vertical text */
+    .vtext {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+
+    /* marker highlight */
+    .marker {
+      background: linear-gradient(180deg, transparent 55%, var(--mustard) 55%);
+      padding: 0 .15em;
+    }
+
+    /* rotate helpers */
+    .rot-n3 { transform: rotate(-3deg); }
+    .rot-n2 { transform: rotate(-2deg); }
+    .rot-p2 { transform: rotate(2deg); }
+
+    /* focus ring (accessibility) */
+    button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 3px solid var(--blood);
+      outline-offset: 2px;
+    }
+
+    .z-content { position: relative; z-index: 2; }
+  </style>
 </head>
-<body class="min-h-full bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors">
-  <div class="max-w-7xl mx-auto px-4 py-8">
-    <header class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between mb-8">
-      <div class="space-y-3">
-        <div class="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">
-          📚 Full-Stack Bibliothek
-        </div>
-        <h1 class="text-4xl font-bold tracking-tight">Anime- und Manga-Bibliothek</h1>
-        <p class="max-w-2xl text-slate-600 dark:text-slate-300">
-          Verwalte Anime und Manga, filtere nach Genre, bearbeite Einträge ohne Seitenreload
-          und nutze den QR-Code direkt für das Testat.
-        </p>
+
+<body class="min-h-full transition-colors duration-300">
+
+  <!-- ============================ FIXED SIDE MARK ============================ -->
+  <div class="fixed left-3 top-1/2 -translate-y-1/2 z-40 hidden lg:block z-content">
+    <div class="vtext mono text-[0.6rem] tracking-[0.4em] uppercase" style="color: var(--stone)">
+      VOL. 01 — 2026 / Kollektion Nº4
+    </div>
+  </div>
+  <div class="fixed right-3 top-1/2 -translate-y-1/2 z-40 hidden lg:block z-content">
+    <div class="vtext jp text-[0.65rem] tracking-[0.5em]" style="color: var(--stone)">
+      アニメ・漫画・記録
+    </div>
+  </div>
+
+  <!-- ============================ TICKER BAR ============================ -->
+  <div class="z-content border-b-2" style="border-color: var(--ink); background: var(--ink); color: var(--paper);">
+    <div class="overflow-hidden py-1.5">
+      <div class="ticker mono text-xs tracking-[0.25em] uppercase">
+        <span>★ アニメ ANIME</span><span>◆ 漫画 MANGA</span><span>● Vol. 01 / Kollektion Nº4</span><span>▲ REST API · Express 5 · TypeScript</span><span>★ アニメ ANIME</span><span>◆ 漫画 MANGA</span><span>● Ausgabe 2026</span><span>▲ Tokyo · Berlin · Edition</span>
+        <span>★ アニメ ANIME</span><span>◆ 漫画 MANGA</span><span>● Vol. 01 / Kollektion Nº4</span><span>▲ REST API · Express 5 · TypeScript</span><span>★ アニメ ANIME</span><span>◆ 漫画 MANGA</span><span>● Ausgabe 2026</span><span>▲ Tokyo · Berlin · Edition</span>
       </div>
+    </div>
+  </div>
 
-      <div class="flex flex-col gap-4">
-        <button
-          id="darkModeButton"
-          type="button"
-          class="self-start rounded-xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white transition"
-        >
-          🌙 Dark Mode
-        </button>
+  <!-- ============================ HEADER ============================ -->
+  <header class="relative overflow-hidden z-content border-b-2" style="border-color: var(--ink);">
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Testat QR-Code</p>
-          <img
-            src="/images/tcm-qr.png"
-            alt="TCM QR-Code"
-            class="mt-3 w-44 rounded-lg border border-slate-200 dark:border-slate-700"
-          />
+    <!-- Kanji watermark -->
+    <div class="absolute -top-10 -right-6 kanji-wm select-none z-0"
+         style="font-size: clamp(16rem, 32vw, 38rem);">
+      記録
+    </div>
+    <div class="absolute top-40 left-1/3 kanji-wm select-none z-0 hidden md:block"
+         style="font-size: 9rem;">
+      物語
+    </div>
+
+    <div class="relative mx-auto max-w-7xl px-6 lg:px-12 pt-10 pb-14">
+
+      <!-- Top meta row -->
+      <div class="rise rise-1 flex items-center justify-between mono text-[0.7rem] uppercase tracking-[0.25em]">
+        <div class="flex items-center gap-3">
+          <span class="tag tag-ink">Nº 004</span>
+          <span style="color: var(--stone);">Tokyo · Editorial</span>
         </div>
-      </div>
-    </header>
+        <div class="flex items-center gap-4">
+          <span class="hidden sm:inline" style="color: var(--stone);">SAMSTAG · 19. APR. 2026</span>
 
-    <section class="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div class="flex gap-2">
-            <button
-              id="animeTab"
-              type="button"
-              class="rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 transition"
-            >
-              Anime
-            </button>
-            <button
-              id="mangaTab"
-              type="button"
-              class="rounded-xl bg-slate-200 px-4 py-2 text-slate-800 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 transition"
-            >
-              Manga
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <input
-              id="searchInput"
-              type="text"
-              placeholder="Suche nach Titel..."
-              class="rounded-xl border-2 border-slate-300 px-4 py-2 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"
-            />
-            <input
-              id="genreFilter"
-              type="text"
-              placeholder="Genre filtern..."
-              class="rounded-xl border-2 border-slate-300 px-4 py-2 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"
-            />
-          </div>
-        </div>
-
-        <div id="status" class="mt-4 hidden rounded-xl px-4 py-3 text-sm font-medium"></div>
-      </div>
-
-      <form
-        id="formular"
-        class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-      >
-        <div class="flex items-start justify-between gap-3 mb-4">
-          <div>
-            <h2 id="formTitle" class="text-2xl font-bold">Neuen Eintrag anlegen</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-              Das Formular arbeitet per fetch ohne Reload.
-            </p>
-          </div>
           <button
-            id="cancelEditButton"
+            id="darkModeButton"
             type="button"
-            class="hidden rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+            onclick="toggleDarkMode()"
+            class="stamp px-3 py-1.5 text-[0.65rem] flex items-center gap-2"
           >
-            Bearbeiten abbrechen
+            <span id="darkModeIcon">☾</span>
+            <span id="darkModeLabel">Nacht</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Masthead -->
+      <div class="rise rise-2 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+
+        <div class="lg:col-span-8 relative">
+          <!-- tiny eyebrow -->
+          <div class="flex items-center gap-3 mb-3">
+            <div class="h-[2px] w-10" style="background: var(--ink);"></div>
+            <span class="mono text-[0.65rem] uppercase tracking-[0.35em]" style="color: var(--blood);">
+              Vol. 01 — Das Archiv
+            </span>
+          </div>
+
+          <!-- Title -->
+          <h1 class="serif font-extrabold leading-[0.88] tracking-tight"
+              style="font-size: clamp(3.2rem, 9vw, 7.5rem);">
+            <span class="block">オタク</span>
+            <span class="block">
+              <span class="marker">Kiroku</span><span style="color: var(--blood);">.</span>
+            </span>
+          </h1>
+
+          <p class="mt-6 max-w-xl text-[1.05rem] leading-relaxed serif" style="color: var(--ink-2);">
+            Ein kuratiertes Archiv deiner Anime- und Manga-Welt — kategorisiert,
+            bewertet, gefiltert. Jeder Eintrag reist durch eine saubere REST-API
+            aus Express&nbsp;5 + TypeScript, ohne je die Seite neu zu laden.
+          </p>
+
+          <!-- Credit strip -->
+          <div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 mono text-[0.7rem] uppercase tracking-[0.2em]"
+               style="color: var(--stone);">
+            <span><b style="color: var(--ink);">Redaktion:</b> Full-Stack Praktikum</span>
+            <span>·</span>
+            <span>Express&nbsp;5</span><span>·</span>
+            <span>TypeScript</span><span>·</span>
+            <span>REST</span><span>·</span>
+            <span>Vanilla JS</span>
+          </div>
+        </div>
+
+        <!-- Right column — QR + glyph -->
+        <div class="lg:col-span-4 relative">
+
+          <!-- huge katakana glyph -->
+          <div class="float-slow absolute -top-28 -left-6 hidden md:block jp font-black select-none pointer-events-none"
+               style="font-size: 14rem; line-height: 1; color: var(--blood); opacity: 0.9; letter-spacing: -0.05em;">
+            幸
+          </div>
+
+          <div class="relative z-10 ml-auto max-w-[16rem] rot-p2">
+            <div class="border-2 p-4 bg-[color:var(--paper)]"
+                 style="border-color: var(--ink); box-shadow: 6px 6px 0 var(--ink);">
+              <div class="flex items-center justify-between mono text-[0.6rem] uppercase tracking-[0.2em] mb-2">
+                <span>Testat · QR</span>
+                <span style="color: var(--blood);">SCAN</span>
+              </div>
+              <img
+                src="/images/tcm-qr.png"
+                alt="TCM QR-Code"
+                class="w-full aspect-square object-cover"
+                style="filter: contrast(1.1);"
+              />
+              <div class="mt-2 mono text-[0.58rem] uppercase tracking-[0.2em]" style="color: var(--stone);">
+                TCM · Prüfnachweis
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- heavy bottom rule -->
+    <div class="rule-heavy"></div>
+  </header>
+
+
+  <!-- ============================ CONTROL BAR ============================ -->
+  <section class="z-content border-b-2" style="border-color: var(--ink); background: var(--paper-2);">
+    <div class="mx-auto max-w-7xl px-6 lg:px-12 py-5">
+      <div class="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
+
+        <!-- Section label -->
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="mono text-[0.65rem] uppercase tracking-[0.3em]" style="color: var(--blood);">§ 01</span>
+          <span class="serif font-bold text-lg">Navigation</span>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-0">
+          <button id="animeTab" type="button" onclick="switchTab('anime')" class="tab-btn">
+            Anime
+            <span class="jp-sm">アニメ</span>
+          </button>
+          <button id="mangaTab" type="button" onclick="switchTab('manga')" class="tab-btn -ml-[2px]">
+            Manga
+            <span class="jp-sm">漫画</span>
           </button>
         </div>
 
-        <input id="editId" type="hidden" />
-
-        <div class="grid grid-cols-1 gap-4">
-          <div>
-            <label for="title" class="mb-1 block text-sm font-medium">Titel</label>
+        <!-- Search fields -->
+        <div class="flex flex-col sm:flex-row gap-3 flex-1 lg:justify-end">
+          <label class="relative flex-1 sm:max-w-[16rem]">
+            <span class="absolute left-0 top-1/2 -translate-y-1/2 mono text-[0.6rem] uppercase tracking-[0.2em]"
+                  style="color: var(--stone);">Titel →</span>
             <input
-              id="title"
+              id="searchInput"
               type="text"
-              required
-              minlength="2"
               placeholder="z. B. Death Note"
-              class="w-full rounded-xl border-2 border-slate-300 px-4 py-2 outline-none focus:border-indigo-500 invalid:border-red-500 valid:border-green-500 dark:border-slate-700 dark:bg-slate-950"
+              oninput="applyFilters()"
+              class="form-input !pl-16"
             />
-            <p id="titleError" class="mt-1 text-sm text-red-500 hidden"></p>
-          </div>
-
-          <div>
-            <label for="description" class="mb-1 block text-sm font-medium">Beschreibung</label>
-            <textarea
-              id="description"
-              required
-              minlength="5"
-              placeholder="Kurze Beschreibung..."
-              class="min-h-[100px] w-full rounded-xl border-2 border-slate-300 px-4 py-2 outline-none focus:border-indigo-500 invalid:border-red-500 valid:border-green-500 dark:border-slate-700 dark:bg-slate-950"
-            ></textarea>
-            <p id="descriptionError" class="mt-1 text-sm text-red-500 hidden"></p>
-          </div>
-
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div>
-              <label id="countLabel" for="count" class="mb-1 block text-sm font-medium">Episoden</label>
-              <input
-                id="count"
-                type="number"
-                required
-                min="1"
-                placeholder="Anzahl"
-                class="w-full rounded-xl border-2 border-slate-300 px-4 py-2 outline-none focus:border-indigo-500 invalid:border-red-500 valid:border-green-500 dark:border-slate-700 dark:bg-slate-950"
-              />
-              <p id="countError" class="mt-1 text-sm text-red-500 hidden"></p>
-            </div>
-
-            <div>
-              <label for="rating" class="mb-1 block text-sm font-medium">Rating</label>
-              <input
-                id="rating"
-                type="number"
-                required
-                min="1"
-                max="10"
-                placeholder="1-10"
-                class="w-full rounded-xl border-2 border-slate-300 px-4 py-2 outline-none focus:border-indigo-500 invalid:border-red-500 valid:border-green-500 dark:border-slate-700 dark:bg-slate-950"
-              />
-              <p id="ratingError" class="mt-1 text-sm text-red-500 hidden"></p>
-            </div>
-
-            <div>
-              <label for="genre" class="mb-1 block text-sm font-medium">Genre</label>
-              <input
-                id="genre"
-                type="text"
-                required
-                minlength="3"
-                placeholder="z. B. Shonen"
-                class="w-full rounded-xl border-2 border-slate-300 px-4 py-2 outline-none focus:border-indigo-500 invalid:border-red-500 valid:border-green-500 dark:border-slate-700 dark:bg-slate-950"
-              />
-              <p id="genreError" class="mt-1 text-sm text-red-500 hidden"></p>
-            </div>
-          </div>
+          </label>
+          <label class="relative flex-1 sm:max-w-[16rem]">
+            <span class="absolute left-0 top-1/2 -translate-y-1/2 mono text-[0.6rem] uppercase tracking-[0.2em]"
+                  style="color: var(--stone);">Genre →</span>
+            <input
+              id="genreFilter"
+              type="text"
+              placeholder="Shonen, Slice…"
+              oninput="applyFilters()"
+              class="form-input !pl-16"
+            />
+          </label>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <button
-          id="submitButton"
-          type="submit"
-          class="mt-5 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 transition"
+
+  <!-- ============================ MAIN ============================ -->
+  <main class="relative z-content mx-auto max-w-7xl px-6 lg:px-12 py-12">
+
+    <!-- decorative kanji -->
+    <div class="absolute -left-10 top-24 kanji-wm select-none hidden xl:block"
+         style="font-size: 16rem;">
+      集
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
+
+      <!-- ==================== FORM SIDE ==================== -->
+      <aside class="lg:col-span-4 rise rise-3">
+        <form
+          id="entryForm"
+          onsubmit="handleFormSubmit(event)"
+          novalidate
+          class="sticky top-8 p-7 border-2 relative"
+          style="border-color: var(--ink); background: var(--paper); box-shadow: 8px 8px 0 var(--ink);"
         >
-          Eintrag speichern
-        </button>
-      </form>
-    </section>
+          <!-- Corner stamp -->
+          <div class="absolute -top-4 -right-4 rot-p2 tag tag-blood">
+            §02 · Eintrag
+          </div>
 
-    <section>
-      <div class="mb-4 flex items-center justify-between">
-        <h2 id="listTitle" class="text-2xl font-bold">Anime-Liste</h2>
-        <span id="countBadge" class="rounded-full bg-slate-200 px-3 py-1 text-sm font-medium dark:bg-slate-800">
-          0 Einträge
-        </span>
-      </div>
+          <div class="flex items-start justify-between gap-3 mb-1">
+            <div class="mono text-[0.6rem] uppercase tracking-[0.3em]" style="color: var(--stone);">
+              Formular · Nº 02
+            </div>
+            <button
+              id="cancelEditButton"
+              type="button"
+              onclick="resetForm()"
+              class="hidden stamp px-2 py-1 text-[0.6rem]"
+            >
+              ✕ Abbrechen
+            </button>
+          </div>
 
-      <div
-        id="liste"
-        class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
-      >
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          Lade Daten...
-        </div>
-      </div>
-    </section>
-  </div>
+          <h2 id="formTitle" class="serif font-extrabold text-3xl leading-tight mt-1">
+            Neuen Eintrag<br/>anlegen<span style="color: var(--blood);">.</span>
+          </h2>
+          <p class="mt-2 text-sm serif" style="color: var(--ink-2);">
+            Sendet per <span class="mono text-[0.75em]">fetch()</span> — kein Seitenreload.
+          </p>
 
-  <script>
-    let aktuellerTyp = "anime";
+          <div class="rule-double my-5"></div>
 
-    const animeTab = document.getElementById("animeTab");
-    const mangaTab = document.getElementById("mangaTab");
-    const liste = document.getElementById("liste");
-    const form = document.getElementById("formular");
-    const formTitle = document.getElementById("formTitle");
-    const submitButton = document.getElementById("submitButton");
-    const cancelEditButton = document.getElementById("cancelEditButton");
-    const editIdInput = document.getElementById("editId");
-    const listTitle = document.getElementById("listTitle");
-    const countBadge = document.getElementById("countBadge");
-    const countLabel = document.getElementById("countLabel");
-    const statusBox = document.getElementById("status");
-    const darkModeButton = document.getElementById("darkModeButton");
-    const searchInput = document.getElementById("searchInput");
-    const genreFilter = document.getElementById("genreFilter");
+          <input id="editId" type="hidden" />
 
-    const fields = {
-      title: document.getElementById("title"),
-      description: document.getElementById("description"),
-      count: document.getElementById("count"),
-      rating: document.getElementById("rating"),
-      genre: document.getElementById("genre")
-    };
+          <div class="space-y-5">
 
-    const errorBoxes = {
-      title: document.getElementById("titleError"),
-      description: document.getElementById("descriptionError"),
-      count: document.getElementById("countError"),
-      rating: document.getElementById("ratingError"),
-      genre: document.getElementById("genreError")
-    };
-
-    function apiBasis() {
-      return `/api/${aktuellerTyp}`;
-    }
-
-    function zeigeStatus(text, type = "success") {
-      statusBox.textContent = text;
-      statusBox.classList.remove("hidden", "bg-green-100", "text-green-800", "bg-red-100", "text-red-800", "dark:bg-green-900/30", "dark:text-green-200", "dark:bg-red-900/30", "dark:text-red-200");
-
-      if (type === "success") {
-        statusBox.classList.add("bg-green-100", "text-green-800", "dark:bg-green-900/30", "dark:text-green-200");
-      } else {
-        statusBox.classList.add("bg-red-100", "text-red-800", "dark:bg-red-900/30", "dark:text-red-200");
-      }
-    }
-
-    function setzeDarkMode(isDark) {
-      document.documentElement.classList.toggle("dark", isDark);
-      localStorage.setItem("darkMode", isDark ? "dark" : "light");
-      darkModeButton.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
-    }
-
-    function ladeDarkMode() {
-      const gespeichert = localStorage.getItem("darkMode");
-      setzeDarkMode(gespeichert === "dark");
-    }
-
-    darkModeButton.addEventListener("click", () => {
-      setzeDarkMode(!document.documentElement.classList.contains("dark"));
-    });
-
-    function aktualisiereTabs() {
-      const animeAktiv = aktuellerTyp === "anime";
-
-      animeTab.className = animeAktiv
-        ? "rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 transition"
-        : "rounded-xl bg-slate-200 px-4 py-2 text-slate-800 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 transition";
-
-      mangaTab.className = !animeAktiv
-        ? "rounded-xl bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 transition"
-        : "rounded-xl bg-slate-200 px-4 py-2 text-slate-800 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 transition";
-
-      listTitle.textContent = animeAktiv ? "Anime-Liste" : "Manga-Liste";
-      countLabel.textContent = animeAktiv ? "Episoden" : "Kapitel";
-    }
-
-    animeTab.addEventListener("click", () => {
-      aktuellerTyp = "anime";
-      resetForm();
-      aktualisiereTabs();
-      ladeDaten();
-    });
-
-    mangaTab.addEventListener("click", () => {
-      aktuellerTyp = "manga";
-      resetForm();
-      aktualisiereTabs();
-      ladeDaten();
-    });
-
-    function baueQuery() {
-      const params = new URLSearchParams();
-
-      if (searchInput.value.trim()) {
-        params.set("search", searchInput.value.trim());
-      }
-
-      if (genreFilter.value.trim()) {
-        params.set("genre", genreFilter.value.trim());
-      }
-
-      const query = params.toString();
-      return query ? `?${query}` : "";
-    }
-
-    function escapeHtml(text) {
-      return String(text)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function erstelleKarte(item) {
-      const anzahlLabel = aktuellerTyp === "anime" ? "Episoden" : "Kapitel";
-      const anzahl = aktuellerTyp === "anime" ? item.episodes : item.chapters;
-
-      return `
-        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-          <div class="flex items-start justify-between gap-3">
             <div>
-              <h3 class="text-xl font-semibold">${escapeHtml(item.title)}</h3>
-              <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                ${escapeHtml(item.description)}
+              <label for="fieldTitle" class="form-label">01 · Titel *</label>
+              <input
+                id="fieldTitle" type="text" required minlength="2"
+                placeholder="Death Note"
+                oninput="validateField(this)" onblur="validateField(this)"
+                class="form-input"
+              />
+              <p id="errorTitle" class="form-error hidden"></p>
+            </div>
+
+            <div>
+              <label for="fieldDescription" class="form-label">02 · Beschreibung *</label>
+              <textarea
+                id="fieldDescription" required minlength="5"
+                placeholder="Ein Notizbuch mit tödlicher Kraft…"
+                rows="3"
+                oninput="validateField(this)" onblur="validateField(this)"
+                class="form-input"
+              ></textarea>
+              <p id="errorDescription" class="form-error hidden"></p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+              <div>
+                <label id="countLabel" for="fieldCount" class="form-label">03 · Eps. *</label>
+                <input
+                  id="fieldCount" type="number" required min="1"
+                  placeholder="—"
+                  oninput="validateField(this)" onblur="validateField(this)"
+                  class="form-input mono"
+                />
+                <p id="errorCount" class="form-error hidden"></p>
+              </div>
+              <div>
+                <label for="fieldRating" class="form-label">04 · Rtg *</label>
+                <input
+                  id="fieldRating" type="number" required min="1" max="10"
+                  placeholder="1–10"
+                  oninput="validateField(this)" onblur="validateField(this)"
+                  class="form-input mono"
+                />
+                <p id="errorRating" class="form-error hidden"></p>
+              </div>
+              <div>
+                <label for="fieldGenre" class="form-label">05 · Genre *</label>
+                <input
+                  id="fieldGenre" type="text" required minlength="3"
+                  placeholder="Shonen"
+                  oninput="validateField(this)" onblur="validateField(this)"
+                  class="form-input"
+                />
+                <p id="errorGenre" class="form-error hidden"></p>
+              </div>
+            </div>
+
+            <div>
+              <label for="fieldImageUrl" class="form-label">06 · Cover-URL <span style="text-transform:none; letter-spacing:0; font-weight:400;">(optional)</span></label>
+              <input
+                id="fieldImageUrl" type="url"
+                placeholder="https://example.com/cover.jpg"
+                class="form-input mono text-xs"
+              />
+              <p class="mt-1 mono text-[0.6rem] uppercase tracking-[0.15em]" style="color: var(--stone);">
+                Lokal gespeichert · nicht im Backend
               </p>
             </div>
-            <span class="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-              ⭐ ${item.rating}/10
-            </span>
           </div>
 
-          <div class="mt-4 flex flex-wrap gap-2">
-            <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200">
-              ${escapeHtml(item.genre)}
-            </span>
-            <span class="rounded-full bg-slate-200 px-3 py-1 text-sm text-slate-800 dark:bg-slate-800 dark:text-slate-100">
-              ${anzahlLabel}: ${anzahl}
-            </span>
-          </div>
+          <button
+            id="submitButton"
+            type="submit"
+            class="stamp stamp-blood w-full mt-7 px-5 py-3.5 text-sm"
+          >
+            ▶ Eintrag speichern
+          </button>
+        </form>
+      </aside>
 
-          <div class="mt-5 flex gap-2">
-            <button
-              type="button"
-              onclick="bearbeiteEintrag(${item.id})"
-              class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
-            >
-              Bearbeiten
-            </button>
-            <button
-              type="button"
-              onclick="loescheEintrag(${item.id})"
-              class="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
-            >
-              Löschen
-            </button>
+
+      <!-- ==================== LIST SIDE ==================== -->
+      <section class="lg:col-span-8 rise rise-4">
+
+        <!-- List header -->
+        <div class="flex items-end justify-between gap-6 mb-6 flex-wrap">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <span class="mono text-[0.65rem] uppercase tracking-[0.3em]" style="color: var(--blood);">§ 03 — Das Archiv</span>
+            </div>
+            <h2 id="listTitle" class="serif font-extrabold text-5xl leading-none tracking-tight">
+              Anime-Liste<span style="color: var(--blood);">.</span>
+            </h2>
           </div>
-        </article>
-      `;
+          <div class="flex items-center gap-3">
+            <span class="mono text-[0.65rem] uppercase tracking-[0.25em]" style="color: var(--stone);">Gesamt</span>
+            <span
+              id="countBadge"
+              class="tag tag-ink text-sm px-3 py-1.5"
+            >0 Einträge</span>
+          </div>
+        </div>
+
+        <div class="rule-heavy mb-8"></div>
+
+        <!-- Grid -->
+        <div id="entryList" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="col-span-full p-12 text-center border-2 border-dashed"
+               style="border-color: var(--ink); background: var(--paper-2);">
+            <div class="jp text-4xl mb-3" style="color: var(--blood);">読込中</div>
+            <div class="mono text-[0.7rem] uppercase tracking-[0.3em]" style="color: var(--stone);">
+              Lade Daten…
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer note -->
+        <div class="mt-14 pt-6 border-t-2 flex items-center justify-between mono text-[0.65rem] uppercase tracking-[0.25em]"
+             style="border-color: var(--ink); color: var(--stone);">
+          <span>Oтаku Kronik · Nº004 · 2026</span>
+          <span class="jp">— 終 —</span>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+
+  <!-- ============================ TOAST ============================ -->
+  <div
+    id="toastContainer"
+    class="pointer-events-none fixed bottom-8 right-8 z-[100] flex flex-col gap-3"
+    aria-live="polite"
+  ></div>
+
+
+  <!-- ============================ JS ============================ -->
+  <script>
+    // STATE
+    const state = {
+      currentType: "anime",
+      editingId:   null,
+      filterTimer: null,
+    };
+
+    // IMAGE STORE
+    const imageStore = {
+      key:    (type, id)      => `img_${type}_${id}`,
+      get:    (type, id)      => localStorage.getItem(imageStore.key(type, id)) || "",
+      set:    (type, id, url) => {
+        if (url) localStorage.setItem(imageStore.key(type, id), url);
+        else     localStorage.removeItem(imageStore.key(type, id));
+      },
+      remove: (type, id)      => localStorage.removeItem(imageStore.key(type, id)),
+    };
+
+    // API
+    function apiBase() { return `/api/${state.currentType}`; }
+
+    function buildQueryString() {
+      const params = new URLSearchParams();
+      const search = document.getElementById("searchInput").value.trim();
+      const genre  = document.getElementById("genreFilter").value.trim();
+      if (search) params.set("search", search);
+      if (genre)  params.set("genre",  genre);
+      const qs = params.toString();
+      return qs ? `?${qs}` : "";
     }
 
-    async function ladeDaten() {
+    async function fetchJson(url, options = {}) {
+      const response = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      if (!response.ok && response.status !== 204) throw new Error(`HTTP ${response.status}`);
+      if (response.status === 204) return null;
+      return response.json();
+    }
+
+    // LOAD & RENDER
+    async function loadEntries() {
+      const listEl = document.getElementById("entryList");
       try {
-        const response = await fetch(`${apiBasis()}${baueQuery()}`);
-
-        if (!response.ok) {
-          throw new Error("Daten konnten nicht geladen werden.");
-        }
-
-        const items = await response.json();
-        countBadge.textContent = `${items.length} Einträge`;
+        const items = await fetchJson(`${apiBase()}${buildQueryString()}`);
+        document.getElementById("countBadge").textContent = `${items.length} Einträge`;
 
         if (items.length === 0) {
-          liste.innerHTML = `
-            <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 md:col-span-2 xl:col-span-3">
-              Keine Einträge gefunden.
-            </div>
-          `;
+          listEl.innerHTML = `
+            <div class="col-span-full p-12 text-center border-2 border-dashed"
+                 style="border-color: var(--ink); background: var(--paper-2);">
+              <div class="jp text-5xl mb-3">空</div>
+              <div class="serif text-xl font-bold">Keine Einträge gefunden</div>
+              <div class="mono text-[0.65rem] uppercase tracking-[0.3em] mt-2" style="color: var(--stone);">
+                Filter anpassen oder neu anlegen
+              </div>
+            </div>`;
           return;
         }
 
-        liste.innerHTML = items.map(erstelleKarte).join("");
-      } catch (error) {
-        liste.innerHTML = `
-          <div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300 md:col-span-2 xl:col-span-3">
-            Fehler beim Laden der Daten.
-          </div>
-        `;
+        listEl.innerHTML = items.map((it, idx) => renderCard(it, idx)).join("");
+      } catch {
+        listEl.innerHTML = `
+          <div class="col-span-full p-8 border-2"
+               style="border-color: var(--blood); background: var(--paper-2); color: var(--blood);">
+            <div class="mono text-[0.65rem] uppercase tracking-[0.3em] mb-2">Fehler · 500</div>
+            <div class="serif text-2xl font-bold">Daten konnten nicht geladen werden.</div>
+          </div>`;
       }
     }
 
-    function resetForm() {
-      form.reset();
-      editIdInput.value = "";
-      formTitle.textContent = "Neuen Eintrag anlegen";
-      submitButton.textContent = "Eintrag speichern";
-      cancelEditButton.classList.add("hidden");
+    function renderCard(item, idx) {
+      const isAnime  = state.currentType === "anime";
+      const count    = isAnime ? item.episodes : item.chapters;
+      const label    = isAnime ? "Eps" : "Kap";
+      const imageUrl = imageStore.get(state.currentType, item.id);
+      const pct      = (item.rating / 10) * 100;
+      const num      = String(idx + 1).padStart(2, "0");
 
-      Object.values(errorBoxes).forEach((box) => {
-        box.textContent = "";
-        box.classList.add("hidden");
+      const imageHtml = imageUrl
+        ? `<div class="relative mb-4 -mx-5 -mt-5 overflow-hidden border-b-2" style="border-color: var(--ink);">
+             <img src="${escapeHtml(imageUrl)}"
+                  alt="Cover von ${escapeHtml(item.title)}"
+                  loading="lazy"
+                  onerror="this.parentElement.remove()"
+                  class="w-full h-52 object-cover"
+                  style="filter: contrast(1.05) saturate(0.9);"/>
+             <div class="absolute inset-0 pointer-events-none"
+                  style="background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.25));"></div>
+           </div>`
+        : "";
+
+      return `
+        <article class="zine-card p-5 pt-6 flex flex-col">
+          <div class="num">${num}</div>
+          <div class="rating-disk">
+            <div class="text-center">
+              <div class="val">${item.rating}</div>
+              <div class="sm">/10</div>
+            </div>
+          </div>
+
+          ${imageHtml}
+
+          <div class="pr-16">
+            <div class="mono text-[0.6rem] uppercase tracking-[0.25em] mb-1.5" style="color: var(--stone);">
+              ${isAnime ? "アニメ" : "漫画"} · ${escapeHtml(item.genre)}
+            </div>
+            <h3 class="serif font-extrabold text-2xl leading-[1.05]">
+              ${escapeHtml(item.title)}
+            </h3>
+          </div>
+
+          <p class="mt-3 text-sm serif leading-relaxed line-clamp-3" style="color: var(--ink-2);">
+            ${escapeHtml(item.description)}
+          </p>
+
+          <div class="mt-5">
+            <div class="flex items-center justify-between mono text-[0.6rem] uppercase tracking-[0.2em] mb-1.5"
+                 style="color: var(--stone);">
+              <span>Bewertung</span><span>${item.rating}/10</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="tag tag-blood">${escapeHtml(item.genre)}</span>
+            <span class="tag">${label} · ${count}</span>
+          </div>
+
+          <div class="mt-5 pt-4 border-t-2 flex gap-2" style="border-color: var(--ink);">
+            <button type="button" onclick="startEdit(${item.id})"
+              class="stamp flex-1 px-3 py-2 text-[0.7rem]">
+              ✎ Bearbeiten
+            </button>
+            <button type="button" onclick="deleteEntry(${item.id})"
+              class="stamp stamp-ink flex-1 px-3 py-2 text-[0.7rem]">
+              ✕ Löschen
+            </button>
+          </div>
+        </article>`;
+    }
+
+    // CRUD
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+
+      const fieldIds = ["fieldTitle", "fieldDescription", "fieldCount", "fieldRating", "fieldGenre"];
+      const allValid = fieldIds.every(id => validateField(document.getElementById(id)));
+      if (!allValid) return;
+
+      const isAnime   = state.currentType === "anime";
+      const isEditing = Boolean(state.editingId);
+
+      const payload = {
+        title:       document.getElementById("fieldTitle").value.trim(),
+        description: document.getElementById("fieldDescription").value.trim(),
+        rating:      Number(document.getElementById("fieldRating").value),
+        genre:       document.getElementById("fieldGenre").value.trim(),
+        ...(isAnime
+          ? { episodes: Number(document.getElementById("fieldCount").value) }
+          : { chapters: Number(document.getElementById("fieldCount").value) }),
+      };
+
+      const url    = isEditing ? `${apiBase()}/${state.editingId}` : apiBase();
+      const method = isEditing ? "PUT" : "POST";
+
+      const btn = document.getElementById("submitButton");
+      btn.disabled    = true;
+      btn.textContent = "Speichern…";
+
+      try {
+        const saved = await fetchJson(url, { method, body: JSON.stringify(payload) });
+        const imageUrl = document.getElementById("fieldImageUrl").value.trim();
+        const savedId  = isEditing ? state.editingId : saved.id;
+        imageStore.set(state.currentType, savedId, imageUrl);
+
+        showToast(isEditing ? "Eintrag aktualisiert" : "Eintrag angelegt", "success");
+        resetForm();
+        loadEntries();
+      } catch {
+        showToast("Speichern fehlgeschlagen", "error");
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = "▶ Eintrag speichern";
+      }
+    }
+
+    async function startEdit(id) {
+      try {
+        const item    = await fetchJson(`${apiBase()}/${id}`);
+        const isAnime = state.currentType === "anime";
+
+        state.editingId = id;
+
+        document.getElementById("editId").value           = id;
+        document.getElementById("fieldTitle").value       = item.title;
+        document.getElementById("fieldDescription").value = item.description;
+        document.getElementById("fieldCount").value       = isAnime ? item.episodes : item.chapters;
+        document.getElementById("fieldRating").value      = item.rating;
+        document.getElementById("fieldGenre").value       = item.genre;
+        document.getElementById("fieldImageUrl").value    = imageStore.get(state.currentType, id);
+
+        document.getElementById("formTitle").innerHTML       = 'Eintrag<br/>bearbeiten<span style="color: var(--blood);">.</span>';
+        document.getElementById("submitButton").textContent  = "▶ Änderungen speichern";
+        document.getElementById("cancelEditButton").classList.remove("hidden");
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {
+        showToast("Eintrag konnte nicht geladen werden", "error");
+      }
+    }
+
+    async function deleteEntry(id) {
+      if (!confirm("Diesen Eintrag wirklich löschen?")) return;
+      try {
+        await fetchJson(`${apiBase()}/${id}`, { method: "DELETE" });
+        imageStore.remove(state.currentType, id);
+        showToast("Eintrag gelöscht", "success");
+        if (state.editingId === id) resetForm();
+        loadEntries();
+      } catch {
+        showToast("Löschen fehlgeschlagen", "error");
+      }
+    }
+
+    // FORM HELPERS
+    function resetForm() {
+      state.editingId = null;
+      document.getElementById("entryForm").reset();
+      document.getElementById("editId").value = "";
+      document.getElementById("formTitle").innerHTML = 'Neuen Eintrag<br/>anlegen<span style="color: var(--blood);">.</span>';
+      document.getElementById("submitButton").textContent = "▶ Eintrag speichern";
+      document.getElementById("cancelEditButton").classList.add("hidden");
+
+      ["Title", "Description", "Count", "Rating", "Genre"].forEach(name => {
+        const errEl = document.getElementById(`error${name}`);
+        if (errEl) { errEl.textContent = ""; errEl.classList.add("hidden"); }
+      });
+      ["fieldTitle", "fieldDescription", "fieldCount", "fieldRating", "fieldGenre"].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.borderBottomColor = "";
       });
     }
 
-    cancelEditButton.addEventListener("click", resetForm);
-
-    async function bearbeiteEintrag(id) {
-      try {
-        const response = await fetch(`${apiBasis()}/${id}`);
-        if (!response.ok) {
-          throw new Error("Eintrag konnte nicht geladen werden.");
-        }
-
-        const item = await response.json();
-
-        editIdInput.value = item.id;
-        fields.title.value = item.title;
-        fields.description.value = item.description;
-        fields.count.value = aktuellerTyp === "anime" ? item.episodes : item.chapters;
-        fields.rating.value = item.rating;
-        fields.genre.value = item.genre;
-
-        formTitle.textContent = "Eintrag bearbeiten";
-        submitButton.textContent = "Änderungen speichern";
-        cancelEditButton.classList.remove("hidden");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } catch (error) {
-        zeigeStatus("Bearbeiten fehlgeschlagen.", "error");
-      }
-    }
-
-    async function loescheEintrag(id) {
-      const bestaetigt = confirm("Soll dieser Eintrag wirklich gelöscht werden?");
-      if (!bestaetigt) return;
-
-      try {
-        const response = await fetch(`${apiBasis()}/${id}`, {
-          method: "DELETE"
-        });
-
-        if (!response.ok && response.status !== 204) {
-          throw new Error("Löschen fehlgeschlagen.");
-        }
-
-        zeigeStatus("Eintrag gelöscht.");
-        resetForm();
-        ladeDaten();
-      } catch (error) {
-        zeigeStatus("Löschen fehlgeschlagen.", "error");
-      }
-    }
-
-    window.bearbeiteEintrag = bearbeiteEintrag;
-    window.loescheEintrag = loescheEintrag;
-
-    function validierungsText(input) {
-      if (input.validity.valueMissing) return "Dieses Feld ist erforderlich.";
-      if (input.validity.tooShort) return `Mindestens ${input.minLength} Zeichen eingeben.`;
-      if (input.validity.rangeUnderflow) return `Der Wert muss mindestens ${input.min} sein.`;
-      if (input.validity.rangeOverflow) return `Der Wert darf höchstens ${input.max} sein.`;
+    function getValidationError(input) {
+      if (input.validity.valueMissing)   return "Pflichtfeld.";
+      if (input.validity.tooShort)       return `Mindestens ${input.minLength} Zeichen.`;
+      if (input.validity.rangeUnderflow) return `Mindestwert: ${input.min}.`;
+      if (input.validity.rangeOverflow)  return `Höchstwert: ${input.max}.`;
+      if (input.validity.typeMismatch)   return "Ungültiger Wert.";
       return "";
     }
 
-    function pruefeFeld(name, input) {
-      const errorBox = errorBoxes[name];
-      const text = validierungsText(input);
+    function validateField(input) {
+      const errorIdMap = {
+        fieldTitle: "errorTitle", fieldDescription: "errorDescription",
+        fieldCount: "errorCount", fieldRating: "errorRating", fieldGenre: "errorGenre",
+      };
+      const errorId = errorIdMap[input.id];
+      const errorEl = errorId ? document.getElementById(errorId) : null;
+      const message = getValidationError(input);
 
-      if (text) {
-        errorBox.textContent = text;
-        errorBox.classList.remove("hidden");
+      if (message) {
+        if (errorEl) { errorEl.textContent = message; errorEl.classList.remove("hidden"); }
+        input.style.borderBottomColor = "var(--blood)";
         return false;
       }
-
-      errorBox.textContent = "";
-      errorBox.classList.add("hidden");
+      if (errorEl) { errorEl.textContent = ""; errorEl.classList.add("hidden"); }
+      input.style.borderBottomColor = "#16a34a";
       return true;
     }
 
-    Object.entries(fields).forEach(([name, input]) => {
-      input.addEventListener("input", () => pruefeFeld(name, input));
-      input.addEventListener("blur", () => pruefeFeld(name, input));
-    });
+    // TABS
+    function switchTab(type) {
+      state.currentType = type;
+      const isAnime = type === "anime";
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+      const animeBtn = document.getElementById("animeTab");
+      const mangaBtn = document.getElementById("mangaTab");
+      animeBtn.classList.toggle("active",  isAnime);
+      mangaBtn.classList.toggle("active", !isAnime);
 
-      const alleGueltig = Object.entries(fields).every(([name, input]) => pruefeFeld(name, input));
-      if (!alleGueltig || !form.reportValidity()) {
-        zeigeStatus("Bitte korrigiere die markierten Felder.", "error");
-        return;
-      }
+      document.getElementById("listTitle").innerHTML =
+        (isAnime ? "Anime-Liste" : "Manga-Liste") + '<span style="color: var(--blood);">.</span>';
+      document.getElementById("countLabel").textContent = isAnime ? "03 · Eps. *" : "03 · Kap. *";
 
-      const payload = {
-        title: fields.title.value.trim(),
-        description: fields.description.value.trim(),
-        rating: Number(fields.rating.value),
-        genre: fields.genre.value.trim(),
-        ...(aktuellerTyp === "anime"
-          ? { episodes: Number(fields.count.value) }
-          : { chapters: Number(fields.count.value) })
-      };
-
-      const istBearbeitung = Boolean(editIdInput.value);
-      const url = istBearbeitung ? `${apiBasis()}/${editIdInput.value}` : apiBasis();
-      const method = istBearbeitung ? "PUT" : "POST";
-
-      try {
-        const response = await fetch(url, {
-          method,
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-          throw new Error("Speichern fehlgeschlagen.");
-        }
-
-        zeigeStatus(istBearbeitung ? "Eintrag aktualisiert." : "Eintrag hinzugefügt.");
-        resetForm();
-        ladeDaten();
-      } catch (error) {
-        zeigeStatus("Speichern fehlgeschlagen.", "error");
-      }
-    });
-
-    let suchTimer;
-
-    function filterNeuLaden() {
-      clearTimeout(suchTimer);
-      suchTimer = setTimeout(() => {
-        ladeDaten();
-      }, 250);
+      resetForm();
+      loadEntries();
     }
 
-    searchInput.addEventListener("input", filterNeuLaden);
-    genreFilter.addEventListener("input", filterNeuLaden);
+    // FILTER
+    function applyFilters() {
+      clearTimeout(state.filterTimer);
+      state.filterTimer = setTimeout(loadEntries, 250);
+    }
 
-    ladeDarkMode();
-    aktualisiereTabs();
-    ladeDaten();
+    // DARK MODE
+    function toggleDarkMode() {
+      const isDark = document.documentElement.classList.toggle("dark");
+      localStorage.setItem("darkMode", isDark ? "dark" : "light");
+      updateDarkModeButton(isDark);
+    }
+    function updateDarkModeButton(isDark) {
+      document.getElementById("darkModeIcon").textContent  = isDark ? "☀" : "☾";
+      document.getElementById("darkModeLabel").textContent = isDark ? "Tag" : "Nacht";
+    }
+    function initDarkMode() {
+      const isDark = localStorage.getItem("darkMode") === "dark";
+      document.documentElement.classList.toggle("dark", isDark);
+      updateDarkModeButton(isDark);
+    }
+
+    // TOAST
+    function showToast(message, type = "success") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      const isOk = type === "success";
+      toast.className = "toast-in pointer-events-auto flex items-center gap-3 px-5 py-3 border-2 stamp";
+      toast.style.cssText = `
+        background: ${isOk ? 'var(--ink)' : 'var(--blood)'};
+        color: var(--paper);
+        border-color: var(--ink);
+        box-shadow: 5px 5px 0 ${isOk ? 'var(--blood)' : 'var(--ink)'};
+        min-width: 240px;
+      `;
+      toast.innerHTML = `
+        <span class="serif text-xl font-bold">${isOk ? "✓" : "✕"}</span>
+        <div class="flex-1">
+          <div class="mono text-[0.55rem] uppercase tracking-[0.25em] opacity-70">${isOk ? "Erfolg" : "Fehler"}</div>
+          <div class="serif text-sm font-bold">${escapeHtml(message)}</div>
+        </div>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.remove("toast-in");
+        toast.classList.add("toast-out");
+        setTimeout(() => toast.remove(), 280);
+      }, 3000);
+    }
+
+    // XSS
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    }
+
+    // INIT
+    function init() {
+      initDarkMode();
+      switchTab("anime");
+    }
+    init();
   </script>
 </body>
 </html>
