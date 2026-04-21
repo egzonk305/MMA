@@ -20,37 +20,74 @@ let nextMangaId =
 
 // ---------- Hilfsfunktionen ----------
 
-function filterAnime(search?: string, genre?: string) {
-  let result = animeList;
+const ANIME_SORT_KEYS = ["title", "rating", "episodes", "genre"] as const;
+const MANGA_SORT_KEYS = ["title", "rating", "chapters", "genre"] as const;
+
+function filterAnime(
+  search?: string,
+  genre?: string,
+  sort?: string,
+  order: "asc" | "desc" = "asc"
+) {
+  let result = [...animeList];
 
   if (genre) {
     result = result.filter(
       (a) => a.genre.toLowerCase() === genre.toLowerCase()
     );
   }
-
   if (search) {
     result = result.filter((a) =>
       a.title.toLowerCase().includes(search.toLowerCase())
     );
   }
+  if (sort && (ANIME_SORT_KEYS as readonly string[]).includes(sort)) {
+    const key = sort as keyof Anime;
+    result.sort((a, b) => {
+      const av = a[key];
+      const bv = b[key];
+      if (typeof av === "string" && typeof bv === "string") {
+        return order === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      }
+      return order === "asc"
+        ? (av as number) - (bv as number)
+        : (bv as number) - (av as number);
+    });
+  }
 
   return result;
 }
 
-function filterManga(search?: string, genre?: string) {
-  let result = mangaList;
+function filterManga(
+  search?: string,
+  genre?: string,
+  sort?: string,
+  order: "asc" | "desc" = "asc"
+) {
+  let result = [...mangaList];
 
   if (genre) {
     result = result.filter(
       (m) => m.genre.toLowerCase() === genre.toLowerCase()
     );
   }
-
   if (search) {
     result = result.filter((m) =>
       m.title.toLowerCase().includes(search.toLowerCase())
     );
+  }
+  if (sort && (MANGA_SORT_KEYS as readonly string[]).includes(sort)) {
+    const key = sort as keyof Manga;
+    result.sort((a, b) => {
+      const av = a[key];
+      const bv = b[key];
+      if (typeof av === "string" && typeof bv === "string") {
+        return order === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      }
+      return order === "asc"
+        ? (av as number) - (bv as number)
+        : (bv as number) - (av as number);
+    });
   }
 
   return result;
@@ -58,12 +95,21 @@ function filterManga(search?: string, genre?: string) {
 
 // ---------- ANIME CRUD ----------
 
-// GET alle Anime + Filter
+// GET alle Anime + Filter + Sortierung + Pagination
 app.get("/api/anime", (req, res) => {
   const search = req.query.search ? String(req.query.search) : undefined;
-  const genre = req.query.genre ? String(req.query.genre) : undefined;
+  const genre  = req.query.genre  ? String(req.query.genre)  : undefined;
+  const sort   = req.query.sort   ? String(req.query.sort)   : undefined;
+  const order  = req.query.order === "desc" ? "desc" : "asc";
+  const page   = Math.max(1, parseInt(String(req.query.page  ?? "1"), 10) || 1);
+  const limit  = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? "6"), 10) || 6));
 
-  res.json(filterAnime(search, genre));
+  const filtered   = filterAnime(search, genre, sort, order);
+  const total      = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const data       = filtered.slice((page - 1) * limit, page * limit);
+
+  res.json({ data, page, limit, total, totalPages });
 });
 
 // GET einzelner Anime
@@ -72,7 +118,7 @@ app.get("/api/anime/:id", (req, res) => {
   const anime = animeList.find((a) => a.id === id);
 
   if (!anime) {
-    res.status(404).json({ message: "Anime nicht gefunden" });
+    res.status(404).json({ error: "Anime nicht gefunden" });
     return;
   }
 
@@ -82,6 +128,27 @@ app.get("/api/anime/:id", (req, res) => {
 // POST Anime
 app.post("/api/anime", (req, res) => {
   const { title, description, episodes, rating, genre } = req.body;
+
+  if (!title || typeof title !== "string") {
+    res.status(400).json({ error: "title ist erforderlich und muss ein String sein" });
+    return;
+  }
+  if (!description || typeof description !== "string") {
+    res.status(400).json({ error: "description ist erforderlich und muss ein String sein" });
+    return;
+  }
+  if (typeof episodes !== "number" || episodes < 1) {
+    res.status(400).json({ error: "episodes ist erforderlich und muss eine positive Zahl sein" });
+    return;
+  }
+  if (typeof rating !== "number" || rating < 1 || rating > 10) {
+    res.status(400).json({ error: "rating ist erforderlich und muss zwischen 1 und 10 liegen" });
+    return;
+  }
+  if (!genre || typeof genre !== "string") {
+    res.status(400).json({ error: "genre ist erforderlich und muss ein String sein" });
+    return;
+  }
 
   const newAnime: Anime = {
     id: nextAnimeId++,
@@ -102,11 +169,32 @@ app.put("/api/anime/:id", (req, res) => {
   const index = animeList.findIndex((a) => a.id === id);
 
   if (index === -1) {
-    res.status(404).json({ message: "Anime nicht gefunden" });
+    res.status(404).json({ error: "Anime nicht gefunden" });
     return;
   }
 
   const { title, description, episodes, rating, genre } = req.body;
+
+  if (!title || typeof title !== "string") {
+    res.status(400).json({ error: "title ist erforderlich und muss ein String sein" });
+    return;
+  }
+  if (!description || typeof description !== "string") {
+    res.status(400).json({ error: "description ist erforderlich und muss ein String sein" });
+    return;
+  }
+  if (typeof episodes !== "number" || episodes < 1) {
+    res.status(400).json({ error: "episodes ist erforderlich und muss eine positive Zahl sein" });
+    return;
+  }
+  if (typeof rating !== "number" || rating < 1 || rating > 10) {
+    res.status(400).json({ error: "rating ist erforderlich und muss zwischen 1 und 10 liegen" });
+    return;
+  }
+  if (!genre || typeof genre !== "string") {
+    res.status(400).json({ error: "genre ist erforderlich und muss ein String sein" });
+    return;
+  }
 
   animeList[index] = {
     ...animeList[index],
@@ -126,7 +214,7 @@ app.delete("/api/anime/:id", (req, res) => {
   const index = animeList.findIndex((a) => a.id === id);
 
   if (index === -1) {
-    res.status(404).json({ message: "Anime nicht gefunden" });
+    res.status(404).json({ error: "Anime nicht gefunden" });
     return;
   }
 
@@ -136,12 +224,21 @@ app.delete("/api/anime/:id", (req, res) => {
 
 // ---------- MANGA CRUD ----------
 
-// GET alle Manga + Filter
+// GET alle Manga + Filter + Sortierung + Pagination
 app.get("/api/manga", (req, res) => {
   const search = req.query.search ? String(req.query.search) : undefined;
-  const genre = req.query.genre ? String(req.query.genre) : undefined;
+  const genre  = req.query.genre  ? String(req.query.genre)  : undefined;
+  const sort   = req.query.sort   ? String(req.query.sort)   : undefined;
+  const order  = req.query.order === "desc" ? "desc" : "asc";
+  const page   = Math.max(1, parseInt(String(req.query.page  ?? "1"), 10) || 1);
+  const limit  = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? "6"), 10) || 6));
 
-  res.json(filterManga(search, genre));
+  const filtered   = filterManga(search, genre, sort, order);
+  const total      = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const data       = filtered.slice((page - 1) * limit, page * limit);
+
+  res.json({ data, page, limit, total, totalPages });
 });
 
 // GET einzelner Manga
@@ -150,7 +247,7 @@ app.get("/api/manga/:id", (req, res) => {
   const manga = mangaList.find((m) => m.id === id);
 
   if (!manga) {
-    res.status(404).json({ message: "Manga nicht gefunden" });
+    res.status(404).json({ error: "Manga nicht gefunden" });
     return;
   }
 
@@ -160,6 +257,27 @@ app.get("/api/manga/:id", (req, res) => {
 // POST Manga
 app.post("/api/manga", (req, res) => {
   const { title, description, chapters, rating, genre } = req.body;
+
+  if (!title || typeof title !== "string") {
+    res.status(400).json({ error: "title ist erforderlich und muss ein String sein" });
+    return;
+  }
+  if (!description || typeof description !== "string") {
+    res.status(400).json({ error: "description ist erforderlich und muss ein String sein" });
+    return;
+  }
+  if (typeof chapters !== "number" || chapters < 1) {
+    res.status(400).json({ error: "chapters ist erforderlich und muss eine positive Zahl sein" });
+    return;
+  }
+  if (typeof rating !== "number" || rating < 1 || rating > 10) {
+    res.status(400).json({ error: "rating ist erforderlich und muss zwischen 1 und 10 liegen" });
+    return;
+  }
+  if (!genre || typeof genre !== "string") {
+    res.status(400).json({ error: "genre ist erforderlich und muss ein String sein" });
+    return;
+  }
 
   const newManga: Manga = {
     id: nextMangaId++,
@@ -180,11 +298,32 @@ app.put("/api/manga/:id", (req, res) => {
   const index = mangaList.findIndex((m) => m.id === id);
 
   if (index === -1) {
-    res.status(404).json({ message: "Manga nicht gefunden" });
+    res.status(404).json({ error: "Manga nicht gefunden" });
     return;
   }
 
   const { title, description, chapters, rating, genre } = req.body;
+
+  if (!title || typeof title !== "string") {
+    res.status(400).json({ error: "title ist erforderlich und muss ein String sein" });
+    return;
+  }
+  if (!description || typeof description !== "string") {
+    res.status(400).json({ error: "description ist erforderlich und muss ein String sein" });
+    return;
+  }
+  if (typeof chapters !== "number" || chapters < 1) {
+    res.status(400).json({ error: "chapters ist erforderlich und muss eine positive Zahl sein" });
+    return;
+  }
+  if (typeof rating !== "number" || rating < 1 || rating > 10) {
+    res.status(400).json({ error: "rating ist erforderlich und muss zwischen 1 und 10 liegen" });
+    return;
+  }
+  if (!genre || typeof genre !== "string") {
+    res.status(400).json({ error: "genre ist erforderlich und muss ein String sein" });
+    return;
+  }
 
   mangaList[index] = {
     ...mangaList[index],
@@ -204,7 +343,7 @@ app.delete("/api/manga/:id", (req, res) => {
   const index = mangaList.findIndex((m) => m.id === id);
 
   if (index === -1) {
-    res.status(404).json({ message: "Manga nicht gefunden" });
+    res.status(404).json({ error: "Manga nicht gefunden" });
     return;
   }
 

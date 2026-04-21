@@ -1,0 +1,233 @@
+<!DOCTYPE html><html><head>
+	<title>Praktikum 2 - Full Stack Development</title>
+	<meta charset=utf-8>
+        <link rel=stylesheet type=text/css href=style.css>
+        <style>
+        code { font-size: 90%; white-space: pre; }
+        .project-ideas { list-style-type: none; padding-left: 1em; }
+        .project-ideas li { margin-bottom: 0.5ex; }
+        </style>
+</head><body>
+<img src="img/erlenmeyer.png" height=200 class=float>
+<h1>Praktikum Multimediaapplikationen/b: Full Stack Development</h1>
+<p>Matthias Hopf &copy; 2026</p>
+<h2>Praktikum 2: Fehlerbehandlung + Typen + Code Review</h2>
+
+<p><b>Grundprinzip</b>: Bauen Sie eine sauber strukturierte REST-API und erstellen Sie ein visuell ansprechendes
+   Frontend mit Tailwind CSS. Erleben Sie zum ersten Mal Code Review als Werkzeug zur Codequalität.</p>
+
+<p><b>Projektideen</b> &mdash; erweitern Sie Ihr Projekt aus Praktikum 1, oder starten Sie neu:</p>
+<ul class=project-ideas>
+    <li>🏋️ Ein Workout-Tracker mit Übungskarten</li>
+    <li>🌱 Ein Pflanzenpflege-Tracker mit Gießplänen</li>
+    <li>🎮 Ein Spielebewertungs-Board mit Ratings</li>
+    <li>📝 Eine Notiz-API mit Kategorien</li>
+    <li>🐾 Erweitern Sie Ihr Projekt aus Praktikum&nbsp;1</li>
+</ul>
+
+<hr class=clear>
+
+
+<h3 class=clear id=a31>
+    <div class=float><div class="side" style="font-size: 65%"><pre style="border:0; padding:0.5em; margin:0; background:transparent">GET /api/recipes/999
+→ 404 { "error": "Not found" }
+
+POST /api/recipes
+{ }
+→ 400 { "error":
+   "title ist erforderlich" }</pre></div></div>
+    Aufgabe 3.1: Fehlerbehandlung (ca. 20min)</h3>
+<p>Wenn Sie es nicht schon während der letzten Aufgaben gemacht haben:<br>
+   Fügen Sie grundlegende Fehlerbehandlung zu Ihren Endpunkten hinzu. Eine gute API gibt aussagekräftige
+   Fehlermeldungen mit passenden HTTP-Statuscodes zurück.</p>
+
+<p><b>404 (Not Found)</b>: Wenn eine Ressource nicht existiert:</p>
+<code class=clear>app.get("/api/recipes/:id", (req, res) =&gt; {
+  const id = Number(req.params.id);
+  const recipe = recipes.find(r =&gt; r.id === id);
+  if (!recipe) {
+    res.status(404).json({ error: "Rezept nicht gefunden" });
+    return;
+  }
+  res.json(recipe);
+});</code>
+
+<p><b>400 (Bad Request)</b>: Wenn die Eingabe ungültig ist:</p>
+<code>app.post("/api/recipes", (req, res) =&gt; {
+  const { title, cuisine, prepTime } = req.body;
+  if (!title || typeof title !== "string") {
+    res.status(400).json({ error: "title ist erforderlich und muss ein String sein" });
+    return;
+  }
+  // ... Rest der Logik
+});</code>
+
+<p>Implementieren Sie zumindest Fehlerbehandlung für folgende Fälle:</p>
+<ul>
+    <li>Ein Eintrag wurde nicht gefunden → <b>404 Not Found</b></li>
+    <li>Die Daten passen nicht zum erwarteten Typ → <b>400 Bad Request</b></li>
+    <li>Ein erforderliches Feld fehlt → <b>400 Bad Request</b></li>
+</ul>
+
+<p>Testen Sie Ihre Fehlerbehandlung:</p>
+<code>curl http://localhost:3000/api/recipes/999
+curl http://localhost:3000/api/recipes/abc
+curl -X POST http://localhost:3000/api/recipes \
+  -H "Content-Type: application/json" -d '{}'</code>
+
+
+<h3 class=clear id=a32>
+    <div class=float><div class="side" style="font-size: 60%"><pre style="border:0; padding:0.5em; margin:0; background:transparent">// types.ts
+export type Recipe = {
+  id: number;
+  title: string;
+  cuisine: string;
+  prepTime: number;
+};
+
+// server.ts
+import { Recipe } from "./types";
+const { title, cuisine }
+  = req.body;</pre></div></div>
+    Aufgabe 3.2: Typdefinitionen &amp; (optional) Destructuring (ca. 30min)</h3>
+<p>Erstellen Sie eine zentrale Typdefinition und nutzen Sie <b>Destructuring</b> in Ihren Express-Handlern.</p>
+
+<p><b>Schritt 1</b>: Erstellen Sie eine Datei <tt>src/types.ts</tt> mit allen Ihren Datentypen:</p>
+<code class=half>// src/types.ts
+export type Recipe = {
+  id: number;
+  title: string;
+  cuisine: string;
+  prepTime: number;
+};</code>
+
+<p><b>Schritt 2</b>: Importieren Sie den Typ in <tt>server.ts</tt> und verwenden Sie ihn überall:</p>
+<code>import { Recipe } from "./types";
+
+const recipes: Recipe[] = [
+  { id: 1, title: "Spaghetti Carbonara", cuisine: "Italienisch", prepTime: 25 },
+  // ...
+];</code>
+
+<p><b>Schritt 3</b>: Nutzen Sie <b>Object Destructuring</b> in Ihren Express-Handlern, um den Code lesbarer zu machen:</p>
+<code>// Vorher:
+app.post("/api/recipes", (req, res) =&gt; {
+  const title = req.body.title;
+  const cuisine = req.body.cuisine;
+  // ...
+});
+
+// Nachher — mit Destructuring:
+app.post("/api/recipes", (req, res) =&gt; {
+  const { title, cuisine, prepTime } = req.body; // Object Destructuring
+  // ...
+});</code>
+
+<p><b>Schritt 4</b>: Probieren Sie auch <b>Array Destructuring</b> aus:</p>
+<code>// Die ersten und restlichen Elemente trennen:
+const [first, ...rest] = recipes;
+console.log(first);        // Erstes Rezept
+console.log(rest.length);  // Anzahl der übrigen</code>
+
+<p><b>Hinweis</b>: Destructuring mit Defaultwerten ist besonders nützlich für optionale Parameter:</p>
+<code>const { name, age = 25 } = user;
+// age ist 25, falls user.age undefined ist</code>
+
+<p>Verwenden Sie TypeScript-Typen durchgehend &mdash; vermeiden Sie <tt>any</tt>!</p>
+
+
+<h3 class=clear id=a33>
+    <div class=float><div class="side center" style="font-size: 80%">
+        <b>Code Review</b><br><br>
+        🔍 Kilo Code Review Mode<br>
+        🐛 Mindestens 3 Issues fixen<br>
+        📝 Dokumentieren, was<br>Sie gelernt haben
+    </div></div>
+    Aufgabe 3.3: Code Review mit Kilo Code (ca. 25min)</h3>
+<p>Erleben Sie zum ersten Mal systematisches Code Review! Kilo Code hat einen speziellen
+   <b>Review Mode</b>, der Ihren Code analysiert und Verbesserungsvorschläge macht.</p>
+
+<p><b>Schritt 1</b>: Öffnen Sie Kilo Code in VS Code und wechseln Sie in den <b>Review Mode</b>.</p>
+
+<p><b>Schritt 2</b>: Lassen Sie Ihren gesamten Code reviewen. Kilo Code wird typischerweise Folgendes finden:</p>
+<ul>
+    <li>Fehlende Fehlerbehandlung</li>
+    <li>Inkonsistente Benennung</li>
+    <li>Verwendung von <tt>any</tt> (sollte vermieden werden!)</li>
+    <li>Sicherheitsprobleme</li>
+    <li>Verbesserungsmöglichkeiten bei der Typisierung</li>
+</ul>
+
+<p><b>Schritt 3</b>: Beheben Sie mindestens <b>3 Issues</b>, die das Review identifiziert.<br>
+    Es sei denn, sie haben bereits optimalen Code erstellt ;-)</p>
+
+<p><b>Schritt 4</b>: Dokumentieren Sie kurz (in einer Datei <tt>REVIEW.md</tt> oder als Kommentare), was Sie gelernt haben.
+   Beispiel:</p>
+<code class=clear>// Vorher (Review-Feedback: "any" vermeiden):
+app.post("/api/recipes", (req: any, res: any) =&gt; { ... });
+
+// Nachher (typisiert):
+app.post("/api/recipes", (req: Request, res: Response) =&gt; { ... });</code>
+
+<p><b>Tipp</b>: Code Review ist auch für erfahrene Entwickler unverzichtbar! Es geht nicht darum, fehlerfrei
+   zu sein, sondern darum, voneinander zu lernen und die Codequalität zu verbessern.</p>
+
+
+<hr class=clear>
+<h3 id=optional>Optionale Aufgaben (Take-Home Improvements)</h3>
+<p>Die folgenden Aufgaben sind <em>optional</em> und müssen nicht abgegeben werden.</p>
+
+
+<h3 class=clear id=a34>
+    Aufgabe 3.4: Tailwind Responsiveness (ca. 20min)</h3>
+<p><b>Schritt 4</b>: Machen Sie Ihr Layout <b>responsive</b>. Tailwind nutzt Breakpoint-Prefixes:</p>
+<ul>
+    <li><tt>sm:</tt> &mdash; ab 640px Breite</li>
+    <li><tt>md:</tt> &mdash; ab 768px Breite</li>
+    <li><tt>lg:</tt> &mdash; ab 1024px Breite</li>
+</ul>
+<p>Beispiel: <tt>class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"</tt> zeigt 1 Spalte auf Mobilgeräten,
+   2 auf Tablets und 3 auf Desktop.</p>
+
+<p><b>Tipp</b>: Die <a href="https://tailwindcss.com/docs">Tailwind-Dokumentation</a> ist hervorragend &mdash;
+   nutzen Sie die Suchfunktion, um passende Klassen zu finden!</p>
+
+
+<h3 class=clear id=a35>
+    Aufgabe 3.5: Pagination implementieren (optional)</h3>
+<p>Fügen Sie Seitennavigation (Pagination) zu Ihrem Listen-Endpunkt hinzu:</p>
+<code>GET /api/recipes?page=1&amp;limit=10</code>
+<p>Der Endpunkt sollte die Ergebnisse aufteilen und Metadaten zurückgeben:</p>
+<code>{
+  "data": [...],
+  "page": 1,
+  "limit": 10,
+  "total": 42,
+  "totalPages": 5
+}</code>
+
+
+<h3 class=clear id=a36>
+    Aufgabe 3.6: Sortierfunktion (optional)</h3>
+<p>Fügen Sie Sortierungsmöglichkeiten über Query-Parameter hinzu:</p>
+<code>GET /api/recipes?sort=title&amp;order=asc
+GET /api/recipes?sort=prepTime&amp;order=desc</code>
+<p>Implementieren Sie die Sortierung im Backend und fügen Sie Sortier-Buttons im Frontend hinzu.</p>
+
+
+<hr>
+<h3>Nützliche Ressourcen</h3>
+<table>
+    <tr><th>Ressource</th><th>URL</th></tr>
+    <tr><td>REST API Tutorial</td><td><a href=https://restfulapi.net/>https://restfulapi.net/</a></td></tr>
+    <tr><td>HTTP Statuscodes</td><td><a href=https://developer.mozilla.org/en-US/docs/Web/HTTP/Status>developer.mozilla.org &mdash; HTTP Status</a></td></tr>
+    <tr><td>Express Routing Guide</td><td><a href=https://expressjs.com/en/guide/routing.html>expressjs.com &mdash; Routing</a></td></tr>
+    <tr><td>Tailwind CSS Dokumentation</td><td><a href=https://tailwindcss.com/docs>https://tailwindcss.com/docs</a></td></tr>
+    <tr><td>Tailwind CSS Playground</td><td><a href=https://play.tailwindcss.com/>https://play.tailwindcss.com/</a></td></tr>
+    <tr><td>MDN: Destructuring</td><td><a href=https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment>developer.mozilla.org &mdash; Destructuring</a></td></tr>
+    <tr><td>TypeScript: Object Types</td><td><a href=https://www.typescriptlang.org/docs/handbook/2/objects.html>typescriptlang.org &mdash; Objects</a></td></tr>
+</table>
+
+<p><br></p>
+<hr>
+</body></html>

@@ -519,6 +519,14 @@
             />
           </label>
         </div>
+
+        <!-- Sort buttons -->
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="mono text-[0.6rem] uppercase tracking-[0.2em] hidden sm:inline" style="color: var(--stone);">Sort →</span>
+          <button id="sortTitle"   type="button" onclick="toggleSort('title')"   class="stamp px-2.5 py-1.5 text-[0.6rem]">Titel</button>
+          <button id="sortRating"  type="button" onclick="toggleSort('rating')"  class="stamp px-2.5 py-1.5 text-[0.6rem]">Rtg</button>
+          <button id="sortCount"   type="button" onclick="toggleSort('count')"   class="stamp px-2.5 py-1.5 text-[0.6rem]">Eps</button>
+        </div>
       </div>
     </div>
   </section>
@@ -691,8 +699,11 @@
           </div>
         </div>
 
+        <!-- Pagination -->
+        <div id="pagination" class="mt-8 flex items-center justify-center gap-2"></div>
+
         <!-- Footer note -->
-        <div class="mt-14 pt-6 border-t-2 flex items-center justify-between mono text-[0.65rem] uppercase tracking-[0.25em]"
+        <div class="mt-10 pt-6 border-t-2 flex items-center justify-between mono text-[0.65rem] uppercase tracking-[0.25em]"
              style="border-color: var(--ink); color: var(--stone);">
           <span>Oтаku Kronik · Nº004 · 2026</span>
           <span class="jp">— 終 —</span>
@@ -718,6 +729,10 @@
       currentType: "anime",
       editingId:   null,
       filterTimer: null,
+      currentPage: 1,
+      pageSize:    6,
+      sortField:   "",
+      sortOrder:   "asc",
     };
 
     // IMAGE STORE
@@ -740,8 +755,16 @@
       const genre  = document.getElementById("genreFilter").value.trim();
       if (search) params.set("search", search);
       if (genre)  params.set("genre",  genre);
-      const qs = params.toString();
-      return qs ? `?${qs}` : "";
+      if (state.sortField) {
+        const backendField = state.sortField === "count"
+          ? (state.currentType === "anime" ? "episodes" : "chapters")
+          : state.sortField;
+        params.set("sort",  backendField);
+        params.set("order", state.sortOrder);
+      }
+      params.set("page",  String(state.currentPage));
+      params.set("limit", String(state.pageSize));
+      return `?${params.toString()}`;
     }
 
     async function fetchJson(url, options = {}) {
@@ -758,8 +781,10 @@
     async function loadEntries() {
       const listEl = document.getElementById("entryList");
       try {
-        const items = await fetchJson(`${apiBase()}${buildQueryString()}`);
-        document.getElementById("countBadge").textContent = `${items.length} Einträge`;
+        const result = await fetchJson(`${apiBase()}${buildQueryString()}`);
+        const { data: items, total, page, totalPages } = result;
+
+        document.getElementById("countBadge").textContent = `${total} Einträge`;
 
         if (items.length === 0) {
           listEl.innerHTML = `
@@ -771,10 +796,13 @@
                 Filter anpassen oder neu anlegen
               </div>
             </div>`;
+          renderPagination(page, totalPages);
           return;
         }
 
-        listEl.innerHTML = items.map((it, idx) => renderCard(it, idx)).join("");
+        const offset = (page - 1) * state.pageSize;
+        listEl.innerHTML = items.map((it, idx) => renderCard(it, offset + idx)).join("");
+        renderPagination(page, totalPages);
       } catch {
         listEl.innerHTML = `
           <div class="col-span-full p-8 border-2"
@@ -782,7 +810,38 @@
             <div class="mono text-[0.65rem] uppercase tracking-[0.3em] mb-2">Fehler · 500</div>
             <div class="serif text-2xl font-bold">Daten konnten nicht geladen werden.</div>
           </div>`;
+        renderPagination(1, 1);
       }
+    }
+
+    function renderPagination(page, totalPages) {
+      const el = document.getElementById("pagination");
+      if (totalPages <= 1) { el.innerHTML = ""; return; }
+
+      const prevDisabled = page <= 1;
+      const nextDisabled = page >= totalPages;
+
+      el.innerHTML = `
+        <button type="button"
+          onclick="goToPage(${page - 1})"
+          ${prevDisabled ? "disabled" : ""}
+          class="stamp px-3 py-2 text-[0.7rem] ${prevDisabled ? "opacity-40 cursor-not-allowed" : ""}">
+          ← Zurück
+        </button>
+        <span class="mono text-[0.65rem] uppercase tracking-[0.2em] px-3" style="color: var(--stone);">
+          ${page} / ${totalPages}
+        </span>
+        <button type="button"
+          onclick="goToPage(${page + 1})"
+          ${nextDisabled ? "disabled" : ""}
+          class="stamp px-3 py-2 text-[0.7rem] ${nextDisabled ? "opacity-40 cursor-not-allowed" : ""}">
+          Weiter →
+        </button>`;
+    }
+
+    function goToPage(page) {
+      state.currentPage = page;
+      loadEntries();
     }
 
     function renderCard(item, idx) {
@@ -990,6 +1049,9 @@
     // TABS
     function switchTab(type) {
       state.currentType = type;
+      state.currentPage = 1;
+      state.sortField   = "";
+      state.sortOrder   = "asc";
       const isAnime = type === "anime";
 
       const animeBtn = document.getElementById("animeTab");
@@ -1001,12 +1063,38 @@
         (isAnime ? "Anime-Liste" : "Manga-Liste") + '<span style="color: var(--blood);">.</span>';
       document.getElementById("countLabel").textContent = isAnime ? "03 · Eps. *" : "03 · Kap. *";
 
+      updateSortButtons();
       resetForm();
       loadEntries();
     }
 
+    // SORT
+    function toggleSort(field) {
+      if (state.sortField === field) {
+        state.sortOrder = state.sortOrder === "asc" ? "desc" : "asc";
+      } else {
+        state.sortField = field;
+        state.sortOrder = "asc";
+      }
+      state.currentPage = 1;
+      updateSortButtons();
+      loadEntries();
+    }
+
+    function updateSortButtons() {
+      const arrow = state.sortOrder === "asc" ? " ↑" : " ↓";
+      ["title", "rating", "count"].forEach(f => {
+        const btn = document.getElementById(`sort${f.charAt(0).toUpperCase() + f.slice(1)}`);
+        if (!btn) return;
+        const labels = { title: "Titel", rating: "Rtg", count: state.currentType === "anime" ? "Eps" : "Kap" };
+        btn.textContent = labels[f] + (state.sortField === f ? arrow : "");
+        btn.classList.toggle("stamp-ink", state.sortField === f);
+      });
+    }
+
     // FILTER
     function applyFilters() {
+      state.currentPage = 1;
       clearTimeout(state.filterTimer);
       state.filterTimer = setTimeout(loadEntries, 250);
     }
@@ -1067,6 +1155,7 @@
       switchTab("anime");
     }
     init();
+
   </script>
 </body>
 </html>
